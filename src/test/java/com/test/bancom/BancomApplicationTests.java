@@ -2,85 +2,78 @@ package com.test.bancom;
 
 import com.test.bancom.model.Usuario;
 import com.test.bancom.model.Post;
-import com.test.bancom.service.UsuarioService;
-import com.test.bancom.service.PostService;
+import com.test.bancom.repository.UsuarioRepository;
+import com.test.bancom.repository.PostRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@DataJpaTest
 public class BancomApplicationTests {
 
 	@Autowired
-	private UsuarioService usuarioService;
+	private UsuarioRepository usuarioRepository;
 
 	@Autowired
-	private PostService postService;
-
-	@Test
-	public void contextLoads() {
-		// Prueba básica para verificar que el contexto de la aplicación se carga correctamente
-		assertThat(usuarioService).isNotNull();
-		assertThat(postService).isNotNull();
-	}
+	private PostRepository postRepository;
 
 	@Test
 	public void createAndRetrieveUsuario() {
-		// Crear un nuevo usuario y luego recuperarlo para verificar que se guardó correctamente
 		Usuario newUser = new Usuario();
 		newUser.setCellphone("1234567890");
 		newUser.setName("Test");
 		newUser.setLastName("User");
 		newUser.setPassword("password");
-		Usuario savedUser = usuarioService.createUsuario(newUser);
+		Usuario savedUser = usuarioRepository.save(newUser);
 
-		Usuario retrievedUser = usuarioService.getUsuarioById(savedUser.getId()).orElse(null);
+		Usuario retrievedUser = usuarioRepository.findById(savedUser.getId()).orElse(null);
 		assertThat(retrievedUser).isNotNull();
 		assertThat(retrievedUser.getName()).isEqualTo(newUser.getName());
 	}
 
 	@Test
 	public void createAndRetrievePost() {
-		// Crear un nuevo post y luego recuperarlo para verificar que se guardó correctamente
-		// Asumimos que ya existe un usuario
 		Usuario user = new Usuario();
-		// Estableciendo un ID de usuario existente
-		user.setId(1L);
+		user.setCellphone("1234567890");
+		user.setName("Test User");
+		user.setLastName("Lastname");
+		user.setPassword("password");
+		Usuario savedUser = usuarioRepository.save(user);
 
 		Post newPost = new Post();
 		newPost.setText("Hello, world!");
-		newPost.setUsuario(user);
-		Post savedPost = postService.createPost(newPost);
+		newPost.setUsuario(savedUser);
+		Post savedPost = postRepository.save(newPost);
 
-		List<Post> posts = postService.getPostsByUsuarioId(user.getId());
+		List<Post> posts = postRepository.findByUsuarioId(savedUser.getId());
 		assertThat(posts).isNotEmpty();
 		assertThat(posts).extracting(Post::getText).contains(newPost.getText());
 	}
 
 	@Test
 	public void testUsuarioPostRelation() {
-		// Prueba para verificar la relación entre Usuario y Post
-		// Asumiendo que ya existe un usuario
-
 		Usuario user = new Usuario();
-		// Estableciendo un ID de usuario existente
-		user.setId(1L);
+		user.setCellphone("9876543210");
+		user.setName("Another User");
+		user.setLastName("Lastname");
+		user.setPassword("secure");
+		Usuario savedUser = usuarioRepository.save(user);
 
 		Post post1 = new Post();
 		post1.setText("Post 1");
-		post1.setUsuario(user);
-		postService.createPost(post1);
+		post1.setUsuario(savedUser);
+		postRepository.save(post1);
 
 		Post post2 = new Post();
 		post2.setText("Post 2");
-		post2.setUsuario(user);
-		postService.createPost(post2);
+		post2.setUsuario(savedUser);
+		postRepository.save(post2);
 
-		List<Post> posts = postService.getPostsByUsuarioId(user.getId());
+		List<Post> posts = postRepository.findByUsuarioId(savedUser.getId());
 		assertThat(posts).hasSize(2);
 	}
 }
